@@ -1,6 +1,7 @@
 package frc.robot;
 
 import org.littletonrobotics.junction.AutoLog;
+import org.littletonrobotics.junction.Logger;
 
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.controls.PositionDutyCycle;
@@ -8,54 +9,62 @@ import com.ctre.phoenix6.hardware.TalonFX;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.IntakeIO.IntakeIOInputs;
 
 public class Intake extends SubsystemBase {
-    private TalonFX pivotMotor;
-    private TalonFX rollerMotor;
     private PIDController pivotController;
-    private Rotation2d pivotSetpoint = Rotation2d.fromDegrees(0);
-    private double rollerSpeed = 0;
+    private PIDController rollerController;
     private final IntakeIO io;
     private final IntakeIOInputs inputs = new IntakeIOInputs();
-
+    private final IntakeIOInputsAutoLogged inputsAutoLogged = new IntakeIOInputsAutoLogged();
+    private Rotation2d angleSetpoint = null; // Setpoint for closed loop control, null for open loop
+    private Double speedSetpoint = null; // Setpoint for closed loop control, null for open loop
     private static Intake instance;
 
     private Intake(IntakeIO io) {
-        pivotMotor = new TalonFX(10);
-        rollerMotor = new TalonFX(11);
         this.io = io;
         pivotController = new PIDController(1.0, 0, 0);
-        pivotMotor.getConfigurator().apply(new Slot0Configs().withKP(pivotController.getP()));
+        rollerController = new PIDController(1.0, 0, 0);
     }
 
     public static Intake getInstance() {
         if (instance == null) {
-            instance = new Intake(new IntakeIO() {
-
-            });
-
+            if (RobotBase.isReal()) {
+                instance = new Intake(new IntakeIOKraken());
+            } else {
+                instance = new Intake(new IntakeIOSim());
+            }
         }
         return instance;
     }
 
     @Override
     public void periodic() {
-        pivotMotor.setControl(new PositionDutyCycle(pivotSetpoint.getRotations()));
-        rollerMotor.set(rollerSpeed);
+        Logger.recordOutput("Intake Running", true);
+        Logger.processInputs("Intake", inputsAutoLogged);
+        io.setPivotVoltage(
+                pivotController.calculate(getIntakeAngle() != null ? getIntakeAngle().getRotations() : 0,
+                        angleSetpoint != null ? angleSetpoint.getRotations() : 0));
+        io.setRollerVoltage(rollerController.calculate(getIntakeSpeed(), inputs.rollerSetpoint));
+
     }
 
     public void setPivotSetpoint(Rotation2d setpoint) {
-        this.pivotSetpoint = setpoint;
+        io.changePivotSetpoint(setpoint);
     }
 
     public void setRollerSetpoint(double setpoint) {
-        this.rollerSpeed = setpoint;
+        io.changeRollerSpeed(setpoint);
     }
 
-    public Rotation2d getPivotSetpoint() {
-        return Rotation2d.fromRotations(pivotMotor.getPosition().getValueAsDouble());
+    public Rotation2d getIntakeAngle() {
+        return inputs.intakePosition;
+    }
+
+    public double getIntakeSpeed() {
+        return inputs.rollerSpeed;
     }
 
 }

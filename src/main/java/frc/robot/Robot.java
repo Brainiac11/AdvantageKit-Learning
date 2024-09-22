@@ -4,7 +4,9 @@
 
 package frc.robot;
 
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.event.EventLoop;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 
 import org.littletonrobotics.junction.AutoLog;
@@ -90,7 +92,7 @@ public class Robot extends LoggedRobot {
 
   @Override
   public void teleopPeriodic() {
-    controller.a().onTrue(new IntakeDownCommand()).onFalse(new IntakeUpCommand());
+
   }
 
   @Override
@@ -115,5 +117,18 @@ public class Robot extends LoggedRobot {
 
   @Override
   public void simulationPeriodic() {
+    if (0.0 < controller.getRawAxis(0)) {
+
+      Intake.getInstance().setPivotSetpoint(Rotation2d.fromDegrees(90));
+      Intake.getInstance().setRollerSetpoint(10);
+      Intake.getInstance().periodic();
+      Logger.recordOutput("Intake Down", true);
+    } else {
+      Logger.recordOutput("Intake Down", false);
+
+      Intake.getInstance().setPivotSetpoint(Rotation2d.fromDegrees(0));
+      Intake.getInstance().setRollerSetpoint(0);
+      Intake.getInstance().periodic();
+    }
   }
 }

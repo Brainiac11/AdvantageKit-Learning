@@ -1,6 +1,7 @@
 package frc.robot;
 
 import org.littletonrobotics.junction.AutoLog;
+import org.littletonrobotics.junction.Logger;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -16,6 +17,7 @@ public class IntakeUpCommand extends Command {
 
     @Override
     public void execute() {
+        Logger.recordOutput("Intake Down", false);
         intake.setPivotSetpoint(Rotation2d.fromDegrees(0));
         intake.setRollerSetpoint(0);
     }

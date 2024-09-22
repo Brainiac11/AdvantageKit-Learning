@@ -13,4 +13,7 @@ public class Constants {
         /** Replaying from a log file. */
         REPLAY
     }
+
+    public static double rollerGearing = 1 / 1.5;
+    public static double pivotGearing = 125 / 1;
 }
